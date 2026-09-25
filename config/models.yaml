@@ -1,0 +1,57 @@
+# Default models for tingjianbiechu-publish-kit v0.1
+# Prefer stable Chinese cover quality; keep cost secondary.
+# Credentials: DEEPSEEK_API_KEY, DASHSCOPE_API_KEY (.env or process env).
+
+version: "0.1.0"
+
+# MagicDub CLI task root (override via CLI / future config.local.yaml)
+samples_root: "~/Movies/MagicDub/cli"
+
+providers:
+  deepseek:
+    kind: openai_compatible
+    base_url: "https://api.deepseek.com"
+    api_key_env: DEEPSEEK_API_KEY
+  dashscope_compatible:
+    # Public Model Studio OpenAI-compatible endpoint.
+    # Note: DASHSCOPE_HTTP_BASE_URL specialty hosts used by MagicDub ASR are NOT
+    # used for plus / VL / OCR here (smoke: specialty /chat/completions → 404).
+    kind: openai_compatible
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key_env: DASHSCOPE_API_KEY
+  dashscope_native:
+    kind: dashscope_multimodal
+    base_url: "https://dashscope.aliyuncs.com/api/v1"
+    api_key_env: DASHSCOPE_API_KEY
+
+roles:
+  copy:
+    provider: deepseek
+    model: deepseek-chat
+  image_prompt:
+    provider: dashscope_compatible
+    model: qwen-plus
+  image:
+    provider: dashscope_native
+    model: qwen-image-3.0-pro
+    prompt_extend: false
+    watermark: false
+  ocr:
+    provider: dashscope_compatible
+    model: qwen3.5-ocr
+  soft_qa:
+    # Stronger during development to avoid weak-model false blocks.
+    provider: dashscope_compatible
+    model: qwen-vl-max
+
+qa:
+  max_image_retries: 2
+  cover_title_must_match_ocr: true
+  soft_fail_delivers_with_review_flag: true
+
+upgrade:
+  # Used only after OCR still fails following retries on primary image model.
+  image:
+    provider: openrouter   # not wired in v0.1 skeleton; needs OPENROUTER_API_KEY later
+    model: openai/gpt-image-2
+    enabled: false

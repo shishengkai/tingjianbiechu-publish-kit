@@ -10,16 +10,8 @@ from pathlib import Path
 
 # Declared project credential names (keep in sync with .env.sample).
 CREDENTIAL_NAMES: tuple[str, ...] = (
-    "FAL_KEY",
-    "FAL_ADMIN_KEY",
-    "DASHSCOPE_API_KEY",
-    "DASHSCOPE_HTTP_BASE_URL",
     "DEEPSEEK_API_KEY",
-    "FISH_API_KEY",
-    "MVSEP_API_KEY",
-    "TIKHUB_API_KEY",
-    "SNAPANY_API_KEY",
-    "OPENROUTER_API_KEY",
+    "DASHSCOPE_API_KEY",
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
