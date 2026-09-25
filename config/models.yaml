@@ -27,7 +27,8 @@ providers:
 roles:
   copy:
     provider: deepseek
-    model: deepseek-chat
+    # Official model id; legacy deepseek-chat still routes here and is billed as Flash.
+    model: deepseek-flash
   image_prompt:
     provider: dashscope_compatible
     model: qwen-plus

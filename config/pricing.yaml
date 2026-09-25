@@ -1,0 +1,107 @@
+# Billing tables for cost estimation when API responses omit a money field.
+# currency in tables: CNY yuan per unit unless noted. USD amounts × usd_to_cny (fixed 7).
+# verified_at: 2026-09-26 from vendor docs linked under sources.
+
+version: "0.1.0"
+usd_to_cny: 7
+display_decimals: 6
+region: beijing  # 华北2（北京）百炼价；国际区另表未作为默认
+
+sources:
+  deepseek_flash: "https://api-docs.deepseek.com/quick_start/pricing"
+  qwen_plus: "https://help.aliyun.com/zh/model-studio/qwen-plus"
+  qwen_vl_max: "https://help.aliyun.com/zh/model-studio/qwen-vl-max"
+  qwen3_5_ocr: "https://help.aliyun.com/zh/model-studio/qwen3-5-ocr"
+  qwen_image_3_0_pro: "https://help.aliyun.com/zh/model-studio/qwen-image-3-0-pro"
+
+# DeepSeek peak: 01:00–04:00 and 06:00–10:00 UTC, Mon–Fri, excluding Chinese public holidays.
+# Off-peak otherwise (weekends + listed holidays in full).
+deepseek_peak_utc:
+  weekdays_only: true  # Mon=0 .. Fri=4
+  windows:
+    - { start: "01:00", end: "04:00" }
+    - { start: "06:00", end: "10:00" }
+
+# Full-day off-peak for DeepSeek: 2026 放假调休 dates from 国办发明电〔2025〕7号
+# (https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm). UTC calendar date.
+chinese_public_holidays_utc_dates:
+  - "2026-01-01"
+  - "2026-01-02"
+  - "2026-01-03"
+  - "2026-02-15"
+  - "2026-02-16"
+  - "2026-02-17"
+  - "2026-02-18"
+  - "2026-02-19"
+  - "2026-02-20"
+  - "2026-02-21"
+  - "2026-02-22"
+  - "2026-02-23"
+  - "2026-04-04"
+  - "2026-04-05"
+  - "2026-04-06"
+  - "2026-05-01"
+  - "2026-05-02"
+  - "2026-05-03"
+  - "2026-05-04"
+  - "2026-05-05"
+  - "2026-06-19"
+  - "2026-06-20"
+  - "2026-06-21"
+  - "2026-09-25"
+  - "2026-09-26"
+  - "2026-09-27"
+  - "2026-10-01"
+  - "2026-10-02"
+  - "2026-10-03"
+  - "2026-10-04"
+  - "2026-10-05"
+  - "2026-10-06"
+  - "2026-10-07"
+
+models:
+  deepseek-flash:
+    aliases: ["deepseek-chat", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"]
+    currency: USD
+    unit: per_1m_tokens
+    # Official table: cache hit / miss input + output; peak doubles off-peak.
+    off_peak:
+      input_cache_hit: 0.003
+      input_cache_miss: 0.15
+      output: 0.6
+    peak:
+      input_cache_hit: 0.006
+      input_cache_miss: 0.3
+      output: 1.2
+
+  qwen-plus:
+    currency: CNY
+    unit: per_1m_tokens
+    # Tier by total input tokens of the request (官方：单次请求输入 Token 总量定档).
+    # Non-thinking realtime API (Batch / 显式缓存创建 not used by default).
+    tiers:
+      - { max_input_tokens: 128000, input: 0.8, output: 2.0, input_cache_hit: 0.16, input_thinking: 0.8, output_thinking: 8.0, input_thinking_cache_hit: 0.16 }
+      - { max_input_tokens: 256000, input: 2.4, output: 20.0, input_cache_hit: 0.48, input_thinking: 2.4, output_thinking: 24.0, input_thinking_cache_hit: 0.48 }
+      - { max_input_tokens: 1000000, input: 4.8, output: 48.0, input_cache_hit: 0.96, input_thinking: 4.8, output_thinking: 64.0, input_thinking_cache_hit: 0.96 }
+
+  qwen-vl-max:
+    currency: CNY
+    unit: per_1m_tokens
+    input: 1.6
+    output: 4.0
+    input_cache_hit: 0.32
+
+  qwen3.5-ocr:
+    currency: CNY
+    unit: per_1m_tokens
+    input: 0.5
+    output: 2.0
+
+  qwen-image-3.0-pro:
+    currency: CNY
+    unit: per_image
+    # Match usage.output_image_type / input_image_type: qima_*_1k / qima_*_2k
+    input_1k: 0.02
+    input_2k: 0.02
+    output_1k: 0.25
+    output_2k: 0.5
