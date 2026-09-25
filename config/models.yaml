@@ -35,7 +35,12 @@ roles:
   image:
     provider: dashscope_native
     model: qwen-image-3.0-pro
-    prompt_extend: false
+    # Vendor default is true; keep on so DPE can push cinematic/AIGC restyle.
+    # OCR gate still rejects wrong glyphs after extend.
+    prompt_extend: true
+    prompt_extend_mode: direct
+    # enable_thinking adds latency; keep off until async path is wired.
+    enable_thinking: false
     watermark: false
   ocr:
     provider: dashscope_compatible

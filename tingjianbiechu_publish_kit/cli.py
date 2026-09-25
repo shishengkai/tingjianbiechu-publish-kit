@@ -5,7 +5,9 @@ import json
 import sys
 
 from . import __version__
+from .clients import ClientError
 from .file_kit import KitError, deliver, inspect, verify
+from .pipeline import run_pipeline
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -17,6 +19,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    run_p = sub.add_parser("run", help="一条命令生成文案+三封面+花费账本")
+    run_p.add_argument("--project", required=True, help="magicdub-cli 任务目录")
+    run_p.add_argument(
+        "--source-dir",
+        help="原素材下载目录；默认尝试 ~/Downloads/<与任务同名的前缀>",
+    )
+    run_p.add_argument("--preview", help="可选人物参考图")
 
     for name in ("inspect", "deliver"):
         p = sub.add_parser(name, help="定位成片与素材" if name == "inspect" else "落盘文案与封面")
@@ -34,6 +44,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     try:
+        if args.command == "run":
+            result = run_pipeline(
+                project=args.project,
+                source_dir=args.source_dir,
+                preview=args.preview,
+            )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            if result.get("cost_report"):
+                print(result["cost_report"], file=sys.stderr)
+            return int(result.get("exit_hint") or 0)
         if args.command == "inspect":
             result = inspect(args)
         elif args.command == "deliver":
@@ -41,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             result = verify(args.record)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    except (KitError, OSError, ValueError, KeyError, TypeError) as error:
+    except (KitError, ClientError, OSError, ValueError, KeyError, TypeError) as error:
         print(json.dumps({"status": "error", "error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2
     return 0
