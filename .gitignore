@@ -1,0 +1,4 @@
+# Local secrets — copy from .env.sample; never commit.
+.env
+.env.local
+.env.*.local
