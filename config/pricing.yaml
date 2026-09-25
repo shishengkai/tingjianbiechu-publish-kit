@@ -4,7 +4,7 @@
 
 version: "0.1.0"
 usd_to_cny: 7
-display_decimals: 6
+display_decimals: 8
 region: beijing  # 华北2（北京）百炼价；国际区另表未作为默认
 
 sources:

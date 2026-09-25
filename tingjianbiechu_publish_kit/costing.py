@@ -23,9 +23,13 @@ def _d(value: Any) -> Decimal:
     return Decimal(str(value))
 
 
-def _money(value: Decimal, decimals: int = 6) -> Decimal:
+def _money(value: Decimal, decimals: int = 8) -> Decimal:
     quant = Decimal("1").scaleb(-decimals)
     return value.quantize(quant, rounding=ROUND_HALF_UP)
+
+
+def _money_str(value: Decimal, decimals: int = 8) -> str:
+    return f"{_money(value, decimals):.{decimals}f}"
 
 
 def load_pricing(path: Path | None = None) -> dict:
@@ -170,7 +174,7 @@ def compute_cost_cny(
     pricing = pricing if pricing is not None else load_pricing()
     when = when or datetime.now(timezone.utc)
     usd_to_cny = _d(pricing.get("usd_to_cny", 7))
-    decimals = int(pricing.get("display_decimals", 6))
+    decimals = int(pricing.get("display_decimals", 8))
     explicit = extract_explicit_cost_cny(response, usd_to_cny)
     model_key = resolve_model_key(model, pricing)
     spec = (pricing.get("models") or {})[model_key]
@@ -328,7 +332,7 @@ class CostLedger:
         return record
 
     def summary(self) -> dict[str, Any]:
-        decimals = int(self.pricing.get("display_decimals", 6))
+        decimals = int(self.pricing.get("display_decimals", 8))
         by_model: dict[str, Decimal] = {}
         for entry in self.entries:
             key = entry["model_key"]
@@ -337,13 +341,15 @@ class CostLedger:
         return {
             "currency": "CNY",
             "usd_to_cny": self.pricing.get("usd_to_cny", 7),
-            "by_model_cny": {k: float(_money(v, decimals)) for k, v in sorted(by_model.items())},
-            "total_cny": float(_money(total, decimals)),
+            "display_decimals": decimals,
+            # Strings avoid binary float rounding at 8 decimal places.
+            "by_model_cny": {k: _money_str(v, decimals) for k, v in sorted(by_model.items())},
+            "total_cny": _money_str(total, decimals),
             "calls": len(self.entries),
             "entries": [
                 {
                     **{k: v for k, v in e.items() if k != "amount_cny"},
-                    "amount_cny": float(_d(e["amount_cny"])),
+                    "amount_cny": _money_str(_d(e["amount_cny"]), decimals),
                 }
                 for e in self.entries
             ],
@@ -351,9 +357,8 @@ class CostLedger:
 
     def format_report(self) -> str:
         summary = self.summary()
-        decimals = int(self.pricing.get("display_decimals", 6))
         lines = ["## 模型花费（人民币）", ""]
         for model, amount in summary["by_model_cny"].items():
-            lines.append(f"- `{model}`: ¥{amount:.{decimals}f}")
-        lines.append(f"- **合计**: ¥{summary['total_cny']:.{decimals}f}")
+            lines.append(f"- `{model}`: ¥{amount}")
+        lines.append(f"- **合计**: ¥{summary['total_cny']}")
         return "\n".join(lines)
